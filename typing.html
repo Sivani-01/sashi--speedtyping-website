@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sashi's Typing Analyzer - Executive Edition</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-dark: #0d1117; --card-bg: #161b22; --accent-glow: #58a6ff;
+            --text-main: #c9d1d9; --text-muted: #8b949e; --success: #3fb950;
+            --gold: #d4af37; --slate: #1e293b;
+        }
+
+        body {
+            background-color: var(--bg-dark); color: var(--text-main);
+            font-family: 'Inter', sans-serif; margin: 0; padding: 0; min-height: 100vh;
+            display: flex; justify-content: center; align-items: center;
+        }
+
+        .main-layout { width: 95%; max-width: 1000px; padding: 20px; }
+
+        .project-box {
+            background: var(--card-bg); border: 1px solid #30363d;
+            border-radius: 16px; padding: 35px; box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+        }
+
+        .title-glow { text-align: center; color: var(--accent-glow); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 30px; margin-top: 0; }
+
+        .setup-row { display: flex; gap: 15px; margin-bottom: 25px; }
+        .custom-select { 
+            background: var(--bg-dark); color: var(--accent-glow); 
+            border: 1px solid #333; padding: 12px; border-radius: 10px; 
+            flex: 1; cursor: pointer; font-weight: 600;
+        }
+
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 25px; }
+        .stat-box { background: var(--bg-dark); padding: 15px; border-radius: 12px; text-align: center; border: 1px solid #333; }
+        .stat-box label { display: block; font-size: 10px; color: var(--text-muted); text-transform: uppercase; }
+        .stat-box span { font-size: 24px; font-weight: 800; color: var(--accent-glow); }
+
+        .analysis-section { display: flex; gap: 20px; margin-bottom: 25px; height: 220px;}
+        .chart-box { flex: 2; background: var(--bg-dark); border: 1px solid #30363d; border-radius: 12px; padding: 15px; }
+        .leaderboard-box { flex: 1; background: var(--bg-dark); border: 1px solid #30363d; border-radius: 12px; padding: 15px; overflow-y: auto;}
+
+        #display-area { 
+            background: #000; padding: 25px; border-radius: 12px; font-size: 22px; 
+            min-height: 50px; margin-bottom: 15px; border-left: 4px solid var(--accent-glow); line-height: 1.6;
+            word-wrap: break-word;
+        }
+        .success { color: var(--success); }
+        .fail { color: #f85149; background: rgba(248, 81, 73, 0.1); }
+        
+        .type-input {
+            width: 100%; height: 100px; background: var(--bg-dark); border: 2px solid #333;
+            color: white; padding: 15px; border-radius: 12px; font-size: 18px; resize: none; outline: none; box-sizing: border-box;
+        }
+
+        #action-area { text-align: center; margin-top: 25px; }
+        .developer-tag { font-size: 12px; color: var(--text-muted); margin-bottom: 10px; }
+        .developer-tag span { color: var(--accent-glow); font-weight: bold; }
+        
+        .btn { padding: 14px 30px; border-radius: 8px; border: none; font-weight: 700; cursor: pointer; }
+        .download-btn { background: var(--gold); color: #000; margin-bottom: 15px;}
+        .restart-btn { background: #333; color: white; }
+        .name-input-glow {
+            display: block; margin: 15px auto; width: 320px; padding: 12px; background: #161b22;
+            border: 1px solid var(--gold); color: white; border-radius: 8px; text-align: center;
+        }
+
+        .certificate-panel { display: none; }
+        #pdf-wrap { background: #f8fafc; padding: 40px; width: 980px; height: 700px; box-sizing: border-box; }
+        #pdf-content {
+            background: #ffffff; color: #1e293b; padding: 40px; 
+            border: 12px double #1e293b; 
+            width: 900px; height: 620px; position: relative; margin: 0 auto; box-sizing: border-box; border-radius: 4px;
+        }
+
+        .ref-id-label { position: absolute; top: 25px; right: 35px; font-family: monospace; font-size: 12px; color: #64748b; }
+        .cert-border-decoration { position: absolute; width: 60px; height: 60px; border: 4px solid var(--gold); z-index: 10; }
+        .top-left { top: 15px; left: 15px; border-right: none; border-bottom: none; }
+        .bottom-right { bottom: 15px; right: 15px; border-left: none; border-top: none; }
+        
+        .cert-header { text-align: center; }
+        .cert-header h1 { font-size: 40px; color: #0f172a; margin: 0; letter-spacing: 2px; text-transform: uppercase; font-weight: 800; }
+        .cert-header p { font-size: 14px; letter-spacing: 4px; color: var(--gold); font-weight: bold; margin-top: 5px; text-transform: uppercase; }
+        
+        .cert-body { text-align: center; margin-top: 30px; }
+        .statement { font-size: 16px; color: #64748b; margin: 5px 0; }
+        .cert-name-display { font-family: 'Dancing Script', cursive; font-size: 54px; color: #0f172a; margin: 10px auto; display: block; border-bottom: 2px solid #e2e8f0; width: fit-content; padding: 0 60px; }
+        
+        .cert-metrics { display: grid; grid-template-columns: 1fr 1fr 1fr; background: #f1f5f9; padding: 20px; border-radius: 12px; margin: 30px 60px 0 60px; }
+        .metric { text-align: center; }
+        .metric .m-label { font-size: 11px; color: #94a3b8; text-transform: uppercase; font-weight: 800; margin-bottom: 5px; }
+        .metric .m-value { font-size: 34px; font-weight: 800; color: #1e293b; margin: 0; }
+        
+        .cert-footer { position: absolute; bottom: 50px; left: 70px; right: 70px; display: flex; justify-content: space-between; align-items: flex-end; }
+        .signature-box { width: 220px; text-align: center; }
+        .sig-line { border-top: 2px solid #1e293b; margin-top: 8px; padding-top: 4px; }
+        .sig-title { font-size: 11px; font-weight: 800; text-transform: uppercase; margin: 0; }
+        .badge-verified { width: 85px; height: 85px; background: var(--gold); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 12px; color: #fff; border: 4px double #fff; text-align: center; transform: rotate(-10deg); box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4); }
+    </style>
+</head>
+<body>
+
+<div class="main-layout">
+    <div class="project-box">
+        <h2 class="title-glow">Performance Analyzer</h2>
+        <div class="setup-row">
+            <select id="diff-config" class="custom-select" onchange="loadNewSentence()">
+                <option value="easy">Level: Associate</option>
+                <option value="medium" selected>Level: Professional</option>
+                <option value="hard">Level: Expert</option>
+            </select>
+            <select id="time-config" class="custom-select" onchange="initUI()">
+                <option value="30">30s Duration</option>
+                <option value="60" selected>60s Duration</option>
+            </select>
+        </div>
+        <div class="stats-grid">
+            <div class="stat-box"><label>Remaining</label><span id="live-timer">60s</span></div>
+            <div class="stat-box"><label>Current WPM</label><span id="live-wpm">0</span></div>
+            <div class="stat-box"><label>Accuracy</label><span id="live-acc">0%</span></div>
+            <div class="stat-box"><label>Session Best</label><span id="best-wpm">0</span></div>
+        </div>
+        <div class="analysis-section">
+            <div class="chart-box"><canvas id="speedChart"></canvas></div>
+            <div class="leaderboard-box"><div id="leaderboard-list"></div></div>
+        </div>
+        <div id="display-area"></div>
+        <textarea id="typing-box" class="type-input" placeholder="Initiate test by typing here..."></textarea>
+        <div id="action-area">
+            <p class="developer-tag">System Architect: <span>Sashi Poorna Sivani</span></p>
+            <input type="text" id="user-name" class="name-input-glow" style="display:none;" placeholder="Candidate Full Name">
+            <div class="button-group">
+                <button class="btn restart-btn" onclick="location.reload()">New Session</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="cert-sidebar" class="certificate-panel">
+        <div id="pdf-wrap"> 
+            <div id="pdf-content">
+                <div class="ref-id-label">REF ID: <span id="pdf-ref-id"></span></div>
+                <div class="cert-border-decoration top-left"></div>
+                <div class="cert-border-decoration bottom-right"></div>
+                <div class="cert-header">
+                    <h1>Certificate of Competency</h1>
+                    <p>Official Performance Record</p>
+                </div>
+                <div class="cert-body">
+                    <p class="statement">This document certifies that</p>
+                    <span id="display-name" class="cert-name-display">Candidate</span>
+                    <p class="statement">has demonstrated proficiency in standardized typing evaluation.</p>
+                </div>
+                <div class="cert-metrics">
+                    <div class="metric"><p class="m-label">Words Per Minute</p><p id="cert-wpm" class="m-value">0</p></div>
+                    <div class="metric"><p class="m-label">Accuracy Rate</p><p id="cert-acc" class="m-value">0%</p></div>
+                    <div class="metric"><p class="m-label">Skill Tier</p><p id="cert-diff" class="m-value">PRO</p></div>
+                </div>
+                <div class="cert-footer">
+                    <div class="signature-box">
+                        <span style="font-family:'Dancing Script'; font-size:28px; color:#0f172a;">K.Sivani</span>
+                        <div class="sig-line"><p class="sig-title" style="color:var(--gold);">Project Architect</p></div>
+                    </div>
+                    <div class="badge-verified">DATA<br>VERIFIED</div>
+                    <div class="signature-box">
+                        <span id="cert-date" style="font-weight:800; font-size:18px; color:#0f172a;"></span>
+                        <div class="sig-line"><p class="sig-title" style="color:#64748b;">Issuance Date</p></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // THE QUOTES DATA
+    const quotes = {
+        easy: [
+            "The sun is very bright.", "I love to write code.", "Cats like to sleep.", 
+            "The apple is red.", "Birds fly in the sky.", "Drink water every day.",
+            "A fast dog runs far.", "The moon glows at night.", "Music makes me happy.",
+            "A small seed grows big.", "Kindness is a gift.", "Learn something new.",
+            "The blue sea is deep.", "Rain falls on the grass.", "Summer is very hot.",
+            "I can type very fast.", "Smile at the world.", "Trees have green leaves.",
+            "A book is a good friend.", "Time flies very fast."
+        ],
+        medium: [
+            "The best way to predict the future is to create it.",
+            "Success is not final, failure is not fatal.",
+            "Don't count the days, make the days count.",
+            "Great things never come from comfort zones.",
+            "Your only limit is your soul.",
+            "Dream big and dare to fail.",
+            "Action is the foundational key to all success.",
+            "Small steps lead to big results over time.",
+            "Integrity is doing the right thing when no one is looking.",
+            "Hard work beats talent when talent doesn't work hard."
+        ],
+        hard: [
+            "Linguistic diversity reflects the rich cultural heritage of civilizations.",
+            "Quantum mechanics provides a mathematical description of dual particle behavior.",
+            "The quintessential component of resilience is the ability to adapt.",
+            "Technological advancements accelerate the rate of global information exchange.",
+            "Socioeconomic factors play a pivotal role in urban development strategies.",
+            "Philosophical inquiries into the nature of reality often yield paradoxes.",
+            "The juxtaposition of light and shadow creates a dramatic visual effect.",
+            "Biotechnology is revolutionizing the approach to modern medical treatments.",
+            "Cryptographic algorithms ensure the integrity of digital transactions.",
+            "Atmospheric carbon dioxide levels contribute significantly to global warming."
+        ]
+    };
+
+    let timeRemaining, isTestActive = false, timerRef, totalSeconds;
+    let speedChart, scores = JSON.parse(localStorage.getItem('sashi_scores_exec')) || [];
+
+    function initUI() {
+        document.getElementById('best-wpm').innerText = scores.length > 0 ? scores[0].wpm : 0;
+        document.getElementById('live-timer').innerText = document.getElementById('time-config').value + 's';
+        updateHistory(); initChart(); loadNewSentence();
+    }
+
+    function initChart() {
+        const ctx = document.getElementById('speedChart').getContext('2d');
+        if(speedChart) speedChart.destroy();
+        speedChart = new Chart(ctx, { 
+            type: 'line', 
+            data: { labels: [0], datasets: [{ data: [0], borderColor: '#58a6ff', fill: true, backgroundColor: 'rgba(88, 166, 255, 0.1)', tension: 0.4 }] }, 
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } 
+        });
+    }
+
+    function loadNewSentence() {
+        const difficulty = document.getElementById('diff-config').value;
+        const selectedLevel = quotes[difficulty];
+        // Select a random sentence from the chosen difficulty array
+        const randomSentence = selectedLevel[Math.floor(Math.random() * selectedLevel.length)];
+        
+        document.getElementById('display-area').innerHTML = randomSentence.split('').map(char => `<span>${char}</span>`).join('');
+        document.getElementById('typing-box').value = '';
+    }
+
+    document.getElementById('typing-box').addEventListener('input', () => {
+        if(!isTestActive && document.getElementById('typing-box').value.length > 0) startTest();
+        if(isTestActive) validate();
+    });
+
+    function startTest() {
+        isTestActive = true; totalSeconds = parseInt(document.getElementById('time-config').value); timeRemaining = totalSeconds;
+        document.getElementById('diff-config').disabled = true; document.getElementById('time-config').disabled = true;
+        timerRef = setInterval(() => {
+            timeRemaining--; 
+            document.getElementById('live-timer').innerText = timeRemaining + 's';
+            speedChart.data.labels.push(totalSeconds - timeRemaining);
+            speedChart.data.datasets[0].data.push(parseInt(document.getElementById('live-wpm').innerText) || 0);
+            speedChart.update();
+            if (timeRemaining <= 0) { clearInterval(timerRef); endTestSession(); }
+        }, 1000);
+    }
+
+    function validate() {
+        const displayArea = document.getElementById('display-area');
+        const spans = displayArea.querySelectorAll('span');
+        const entry = document.getElementById('typing-box').value.split('');
+        let correct = 0;
+
+        spans.forEach((s, i) => { 
+            if(entry[i] == null) s.className = ''; 
+            else if(entry[i] === s.innerText) { s.className = 'success'; correct++; } 
+            else s.className = 'fail'; 
+        });
+
+        let elapsed = (totalSeconds - timeRemaining) / 60 || 0.001;
+        document.getElementById('live-wpm').innerText = Math.round((entry.length / 5) / elapsed);
+        document.getElementById('live-acc').innerText = entry.length > 0 ? Math.round((correct / entry.length) * 100) + '%' : '0%';
+        
+        // If user finishes current sentence, load a new one automatically
+        if(entry.length >= spans.length) {
+            loadNewSentence();
+        }
+    }
+
+    function endTestSession() {
+        isTestActive = false; 
+        document.getElementById('typing-box').disabled = true;
+        const finalWpm = document.getElementById('live-wpm').innerText;
+        const finalAcc = document.getElementById('live-acc').innerText;
+        const generatedID = 'SV-' + Math.floor(100000 + Math.random() * 900000);
+        
+        // Save score to local storage
+        scores.unshift({ wpm: finalWpm, acc: finalAcc, date: new Date().toLocaleDateString() });
+        localStorage.setItem('sashi_scores_exec', JSON.stringify(scores));
+        updateHistory();
+
+        document.getElementById('pdf-ref-id').innerText = generatedID;
+        document.getElementById('user-name').style.display = "block";
+        document.getElementById('cert-wpm').innerText = finalWpm;
+        document.getElementById('cert-acc').innerText = finalAcc;
+        document.getElementById('cert-diff').innerText = document.getElementById('diff-config').value.toUpperCase();
+        document.getElementById('cert-date').innerText = new Date().toLocaleDateString();
+
+        if(!document.querySelector('.download-btn')) {
+            const btn = document.createElement('button');
+            btn.className = "btn download-btn"; 
+            btn.innerText = "DOWNLOAD CERTIFICATE (PDF)";
+            btn.onclick = downloadPDF; 
+            document.querySelector('.button-group').prepend(btn);
+        }
+    }
+
+    function downloadPDF() {
+        const candidateName = document.getElementById('user-name').value || "Sashi";
+        document.getElementById('display-name').innerText = candidateName;
+        
+        const sidebar = document.getElementById('cert-sidebar');
+        sidebar.style.display = 'block';
+        window.scrollTo(0,0);
+
+        const element = document.getElementById('pdf-wrap');
+        const opt = { 
+            margin: 0, 
+            filename: `Competency_Record_${candidateName}.pdf`, 
+            image: { type: 'jpeg', quality: 1.0 },
+            html2canvas: { scale: 3, useCORS: true, letterRendering: true, height: 700, windowHeight: 700 }, 
+            jsPDF: { orientation: 'landscape', unit: 'px', format: [980, 700], putOnlyUsedFonts: true, floatPrecision: 16 }
+        };
+
+        html2pdf().from(element).set(opt).save().then(() => { 
+            sidebar.style.display = 'none'; 
+        });
+    }
+
+    function updateHistory() {
+        document.getElementById('leaderboard-list').innerHTML = scores.slice(0, 5).map(s => 
+            `<div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #333;"><b style="color:var(--accent-glow)">${s.wpm} WPM</b><span style="color:#8b949e;">${s.date}</span></div>`
+        ).join('');
+    }
+
+    initUI();
+</script>
+</body>
+</html>
